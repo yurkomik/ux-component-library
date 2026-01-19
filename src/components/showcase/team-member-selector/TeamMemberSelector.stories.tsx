@@ -407,19 +407,33 @@ A powerful, responsive team member selection component with advanced filtering c
       }
     }
   },
-  tags: ['autodocs'],
-  // Default args for boolean controls (shows toggles instead of "Set boolean" buttons)
+  // Note: autodocs tag removed - using custom MDX documentation instead (TeamMemberSelector.mdx)
+  // Default args - MUST match component defaults for Storybook Controls to show correct initial values
+  // Without these, Storybook won't know what the default is and controls will appear "unselected"
   args: {
+    // Selection behavior
+    variant: 'multiple',
+    allowClear: true,
+
+    // Appearance
+    triggerMode: 'default',
+    badgeAvatarSize: 'lg',
+    // NOTE: compactName intentionally omitted - undefined triggers auto-detection via useIsSmUp()
+    showAvatarStack: false,
+    hideSelectedBadges: false,
+
+    // Navigation & Sorting
+    sortMode: 'alphabetical',
+    showNavigationArrows: true,
+    enableKeyboardNavigation: true,
+
+    // Filtering
+    allowDepartmentFilter: true,
+    allowRoleFilter: true,
+
+    // State
     disabled: false,
     isLoading: false,
-    allowClear: false,
-    allowDepartmentFilter: false,
-    allowRoleFilter: false,
-    hideSelectedBadges: false,
-    compactName: false,
-    showAvatarStack: false,
-    enableKeyboardNavigation: false,
-    showNavigationArrows: false,
   },
   argTypes: {
     // Selection behavior
@@ -427,7 +441,7 @@ A powerful, responsive team member selection component with advanced filtering c
       control: 'inline-radio',
       options: ['single', 'multiple'],
       description: 'Selection mode',
-      table: { category: 'Selection' }
+      table: { category: 'Selection', defaultValue: { summary: 'multiple' } }
     },
     maxSelected: {
       control: { type: 'range', min: 1, max: 10, step: 1 },
@@ -446,13 +460,13 @@ A powerful, responsive team member selection component with advanced filtering c
       control: 'inline-radio',
       options: ['default', 'icon'],
       description: 'Trigger button style',
-      table: { category: 'Appearance' }
+      table: { category: 'Appearance', defaultValue: { summary: 'default' } }
     },
     badgeAvatarSize: {
       control: 'inline-radio',
       options: ['sm', 'md', 'lg', 'xl'],
       description: 'Avatar size in badges, list, and stack (sm=20px, md=24px, lg=28px, xl=32px)',
-      table: { category: 'Appearance' }
+      table: { category: 'Appearance', defaultValue: { summary: 'lg' } }
     },
     compactName: {
       control: 'boolean',
@@ -485,7 +499,7 @@ A powerful, responsive team member selection component with advanced filtering c
       control: 'inline-radio',
       options: ['none', 'alphabetical', 'management'],
       description: 'Sorting strategy',
-      table: { category: 'Navigation' }
+      table: { category: 'Navigation', defaultValue: { summary: 'none' } }
     },
 
     // Filtering
@@ -611,11 +625,36 @@ const TeamMemberSelectorWithState = (props: StoryProps) => {
 // SECTION 6: STORIES - Core Functionality
 // =============================================================================
 
+/**
+ * The Primary story shown in docs - demonstrates full component capabilities.
+ * Single-select with arrows, filters, and sorting. Toggle variant for multi-select.
+ */
+export const Primary: Story = {
+  args: {
+    variant: 'single',
+    placeholder: 'Select team member...',
+    allowClear: true,
+    sortMode: 'alphabetical',
+    showNavigationArrows: true,
+    enableKeyboardNavigation: true,
+    allowDepartmentFilter: true,
+    allowRoleFilter: true,
+  },
+  render: (args) => <TeamMemberSelectorWithState {...args} />,
+  parameters: {
+    docs: {
+      description: {
+        story: 'Full-featured: single-select with navigation arrows, filters, and sorting. Toggle variant to "multiple" for multi-select mode (arrows hide in multi-select by design).'
+      }
+    }
+  }
+}
+
 export const SingleSelect: Story = {
   args: {
     variant: 'single',
     placeholder: 'Select assignee...',
-    isLoading: true,
+    isLoading: false,
     enableKeyboardNavigation: true,
     showNavigationArrows: false
   },
@@ -775,37 +814,103 @@ export const ResponsiveDemo: Story = {
   args: {
     variant: 'single',
     showNavigationArrows: true,
-    placeholder: 'Select and resize viewport...'
+    placeholder: 'Select team member...'
   },
-  render: (args) => {
-    const [selectedIds, setSelectedIds] = useState<string[]>([])
+  render: () => {
+    const [mobileIds, setMobileIds] = useState<string[]>(['1'])
+    const [tabletIds, setTabletIds] = useState<string[]>(['1'])
+    const [desktopIds, setDesktopIds] = useState<string[]>(['1'])
 
     return (
       <div className="flex flex-col items-center gap-6">
-        {/* Component Card */}
-        <div className="w-[320px] sm:w-[400px] p-4 border rounded-lg bg-background space-y-6">
-          <div className="text-sm text-muted-foreground p-3 bg-muted rounded-md">
-            <p className="font-medium mb-2">📱 Responsive Behavior Demo</p>
-            <p>Resize your viewport to see three breakpoints:</p>
-            <ul className="list-disc list-inside mt-2 space-y-1">
-              <li><strong>&lt; 640px:</strong> Compact names, no arrows</li>
-              <li><strong>640px - 1023px:</strong> Full names, no arrows</li>
-              <li><strong>≥ 1024px:</strong> Full names + navigation arrows</li>
-            </ul>
-          </div>
-          <TeamMemberSelector
-            {...args}
-            teamMembers={mockTeamMembers}
-            departments={mockDepartments}
-            roles={mockRoles}
-            selectedIds={selectedIds}
-            onSelectionChange={setSelectedIds}
-          />
+        {/* Info Banner */}
+        <div className="w-full max-w-[900px] text-sm p-4 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-md space-y-2">
+          <p className="font-medium flex items-center gap-2">
+            <span className="text-lg">📱</span> Responsive Behavior Demo
+          </p>
+          <p className="text-muted-foreground text-xs">
+            Three breakpoints control the component layout. Below shows each state using <code className="px-1 py-0.5 bg-background border rounded text-[10px]">compactName</code> prop:
+          </p>
         </div>
-        {/* Storybook State - outside card */}
-        <div className="w-[320px] sm:w-[400px] text-xs font-mono text-foreground/70 p-3 border border-dashed border-border rounded-md bg-secondary/50">
-          <p className="uppercase tracking-wider text-[10px] mb-1 text-muted-foreground">⚙️ Storybook State</p>
-          <p>selected: [{selectedIds.length ? selectedIds.join(', ') : ''}]</p>
+
+        {/* Three Breakpoint Examples */}
+        <div className="w-full max-w-[900px] grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* Mobile: < 640px */}
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-medium px-2 py-1 bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 rounded">📱 Mobile</span>
+              <span className="text-[10px] text-muted-foreground">&lt; 640px</span>
+            </div>
+            <div className="p-3 border rounded-lg bg-background">
+              <TeamMemberSelector
+                teamMembers={mockTeamMembers}
+                departments={mockDepartments}
+                roles={mockRoles}
+                selectedIds={mobileIds}
+                onSelectionChange={setMobileIds}
+                variant="single"
+                showNavigationArrows={true}
+                compactName={true}
+                placeholder="Sarah C."
+              />
+            </div>
+            <p className="text-[10px] text-muted-foreground">
+              ✓ Compact names • ✗ No arrows
+            </p>
+          </div>
+
+          {/* Tablet: 640px - 1023px */}
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-medium px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded">📱 Tablet</span>
+              <span className="text-[10px] text-muted-foreground">640px - 1023px</span>
+            </div>
+            <div className="p-3 border rounded-lg bg-background">
+              <TeamMemberSelector
+                teamMembers={mockTeamMembers}
+                departments={mockDepartments}
+                roles={mockRoles}
+                selectedIds={tabletIds}
+                onSelectionChange={setTabletIds}
+                variant="single"
+                showNavigationArrows={true}
+                compactName={false}
+                placeholder="Sarah Chen"
+              />
+            </div>
+            <p className="text-[10px] text-muted-foreground">
+              ✓ Full names • ✗ No arrows
+            </p>
+          </div>
+
+          {/* Desktop: >= 1024px */}
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-medium px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded">🖥️ Desktop</span>
+              <span className="text-[10px] text-muted-foreground">≥ 1024px</span>
+            </div>
+            <div className="p-3 border rounded-lg bg-background min-w-[280px]">
+              <TeamMemberSelector
+                teamMembers={mockTeamMembers}
+                departments={mockDepartments}
+                roles={mockRoles}
+                selectedIds={desktopIds}
+                onSelectionChange={setDesktopIds}
+                variant="single"
+                showNavigationArrows={true}
+                compactName={false}
+                placeholder="Sarah Chen"
+              />
+            </div>
+            <p className="text-[10px] text-muted-foreground">
+              ✓ Full names • ✓ Navigation arrows
+            </p>
+          </div>
+        </div>
+
+        {/* Technical Note */}
+        <div className="w-full max-w-[900px] text-[10px] text-muted-foreground/70 p-3 border border-dashed rounded-md">
+          <p><strong>Note:</strong> In production, these states trigger automatically based on viewport width via <code>window.matchMedia</code> and CSS breakpoints. Arrows use CSS <code>hidden lg:flex</code>, names use JS <code>useIsSmUp()</code> hook.</p>
         </div>
       </div>
     )
@@ -813,7 +918,7 @@ export const ResponsiveDemo: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Demonstrates viewport-based responsive behavior with three breakpoints. Use Storybook viewport controls or resize your browser to see this in action.'
+        story: 'Shows all three responsive breakpoints side-by-side. In production, these states switch automatically based on viewport width.'
       }
     }
   }
@@ -1870,6 +1975,118 @@ Showcases focus states for all interactive elements in the component.
   }
 }
 
+export const HoverStates: Story = {
+  args: {
+    variant: 'multiple',
+    hideSelectedBadges: false,
+    placeholder: 'Hover over elements...'
+  },
+  render: () => {
+    const [selectedIds1, setSelectedIds1] = useState<string[]>([])
+    const [selectedIds2, setSelectedIds2] = useState<string[]>(['1', '2'])
+    const [listSelectedIds, setListSelectedIds] = useState<string[]>(['1'])
+
+    return (
+      <div className="flex flex-col items-center gap-6">
+        {/* Info Banner */}
+        <div className="w-full max-w-[700px] text-sm p-4 bg-violet-50 dark:bg-violet-950/30 border border-violet-200 dark:border-violet-800 rounded-md space-y-2">
+          <p className="font-medium flex items-center gap-2">
+            <span className="text-lg">🎨</span> Hover States Demo
+          </p>
+          <p className="text-muted-foreground text-xs">
+            Uses <code className="px-1.5 py-0.5 bg-background border rounded text-[10px] font-mono">storybook-addon-pseudo-states</code> to force <code className="px-1.5 py-0.5 bg-background border rounded text-[10px] font-mono">:hover</code> state on all elements simultaneously.
+          </p>
+        </div>
+
+        {/* Hover States Grid */}
+        <div className="w-full max-w-[700px] grid grid-cols-1 sm:grid-cols-2 gap-6">
+          {/* Trigger Hover */}
+          <div className="space-y-2">
+            <p className="text-xs font-medium text-muted-foreground">Trigger Button Hover</p>
+            <div className="p-3 border rounded-lg bg-background">
+              <TeamMemberSelector
+                teamMembers={mockTeamMembers}
+                departments={mockDepartments}
+                roles={mockRoles}
+                selectedIds={selectedIds1}
+                onSelectionChange={setSelectedIds1}
+                variant="single"
+                placeholder="Border appears on hover..."
+              />
+            </div>
+            <p className="text-[10px] text-muted-foreground/60">
+              Border becomes visible via <code>hover:border-border</code>
+            </p>
+          </div>
+
+          {/* Badges with Remove Buttons */}
+          <div className="space-y-2">
+            <p className="text-xs font-medium text-muted-foreground">Badge X Button Hover</p>
+            <div className="p-3 border rounded-lg bg-background">
+              <TeamMemberSelector
+                teamMembers={mockTeamMembers}
+                departments={mockDepartments}
+                roles={mockRoles}
+                selectedIds={selectedIds2}
+                onSelectionChange={setSelectedIds2}
+                variant="multiple"
+                placeholder="Hover X to see red..."
+              />
+            </div>
+            <p className="text-[10px] text-muted-foreground/60">
+              X icon turns red via <code>hover:text-destructive</code>
+            </p>
+          </div>
+
+          {/* Dropdown List Items */}
+          <div className="space-y-2 sm:col-span-2">
+            <p className="text-xs font-medium text-muted-foreground">List Item Hover (Dropdown Content)</p>
+            <div className="p-3 border rounded-lg bg-background shadow-md overflow-hidden">
+              <TeamMemberSelector
+                teamMembers={mockTeamMembers.slice(0, 5)}
+                departments={mockDepartments}
+                roles={mockRoles}
+                selectedIds={listSelectedIds}
+                onSelectionChange={setListSelectedIds}
+                variant="multiple"
+                hideSelectedBadges
+                contentOnly
+              />
+            </div>
+            <p className="text-[10px] text-muted-foreground/60">
+              Items highlight via <code>bg-accent</code> on hover. Checkboxes also show hover state.
+            </p>
+          </div>
+        </div>
+      </div>
+    )
+  },
+  parameters: {
+    pseudo: {
+      hover: true
+    },
+    docs: {
+      description: {
+        story: `
+Demonstrates hover effects using the \`storybook-addon-pseudo-states\` addon.
+
+**Hover Effects in this component:**
+
+| Element | Hover Effect |
+|---------|--------------|
+| **Trigger button** | Border becomes visible (\`border-border\`) |
+| **List items** | Background highlight (\`bg-accent\`) |
+| **Badges** | Subtle background change |
+| **Remove (X) buttons** | Icon turns red (\`text-destructive\`) |
+| **Avatar stack** | Avatar scales up, remove button appears |
+
+**Note:** This story uses \`pseudo: { hover: true }\` to force the hover state on all elements simultaneously. In real usage, only one element would be hovered at a time.
+        `
+      }
+    }
+  }
+}
+
 export const DarkMode: Story = {
   args: {
     variant: 'multiple',
@@ -1878,7 +2095,7 @@ export const DarkMode: Story = {
     placeholder: 'Select team members...'
   },
   globals: {
-    theme: 'dark',
+    darkMode: true,
   },
   parameters: {
     docs: {

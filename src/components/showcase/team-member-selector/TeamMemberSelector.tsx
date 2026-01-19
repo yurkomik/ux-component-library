@@ -798,6 +798,7 @@ export function TeamMemberSelector({
                   variant="ghost"
                   role="combobox"
                   aria-expanded={isPopoverOpen}
+                  aria-label={placeholder}
                   className={cn(
                     "h-9 justify-between border border-transparent hover:border-border focus:border-border pl-2 w-full",
                     showArrows && "sm:flex-1"

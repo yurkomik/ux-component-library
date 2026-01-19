@@ -1,0 +1,100 @@
+{/* TeamMemberSelector.mdx - Component Documentation */}
+import { Meta, Primary, Controls, Source } from '@storybook/addon-docs/blocks'
+import * as TeamMemberSelectorStories from './TeamMemberSelector.stories'
+
+<Meta of={TeamMemberSelectorStories} />
+
+# TeamMemberSelector
+
+A unified team member picker built for CRM workflows where selecting people is a frequent action.
+
+## Why This Component?
+
+In a CRM, you constantly need to assign people—opportunity owners, project teams, reviewers, approvers. Rather than building one-off selectors for each use case, this component handles them all:
+
+### Use Cases
+
+- **Single select** — Assign one owner/lead → *"Who owns this opportunity?"*
+- **Multi-select** — Build a team → *"Who's on the delivery team?"*
+- **With arrows** — Cycle through people → *"Review each person's timesheet"*
+- **Icon trigger** — Inline additions → *"+ Add reviewer" button in a list*
+
+### Key Features
+
+- **Unified selection** — One component for single or multiple selection
+- **Arrow navigation** — Cycle through team members with ← → arrows
+- **Smart filtering** — Search by name, email, role; filter by department
+- **Management sort** — Shows your direct reports first, then peers, then others
+- **Keyboard accessible** — Full WCAG 2.1 AA compliance
+
+---
+
+## Try It
+
+<Primary />
+
+<Controls />
+
+---
+
+## TeamMember Interface
+
+<Source
+  language="typescript"
+  code={`
+interface TeamMember {
+  _id: string
+  name: {
+    givenName?: string
+    familyName?: string
+    fullName: string      // Required
+  }
+  primaryEmail: string
+  photoUrl?: string
+  role?: string
+  orgTitle?: string
+  orgDepartment?: string
+  isManager?: boolean
+  directReports?: string[]
+  reportsTo?: string
+}
+`}
+/>
+
+---
+
+## Quick Start
+
+<Source
+  language="tsx"
+  code={`
+import { TeamMemberSelector } from "@/components/team-member-selector"
+
+// Multi-select
+<TeamMemberSelector
+  teamMembers={teamMembers}
+  selectedIds={selectedIds}
+  onSelectionChange={setSelectedIds}
+/>
+
+// Single-select
+<TeamMemberSelector
+  variant="single"
+  teamMembers={teamMembers}
+  selectedIds={ownerId ? [ownerId] : []}
+  onSelectionChange={(ids) => setOwnerId(ids[0] || null)}
+/>
+
+// With navigation arrows
+<TeamMemberSelector
+  variant="single"
+  showNavigationArrows
+  enableKeyboardNavigation
+  ...
+/>
+`}
+/>
+
+---
+
+> 💡 **More in sidebar:** SingleSelect, MultiSelect, IconTrigger, WithNavigationArrows, loading/error states, filters, and stress tests.

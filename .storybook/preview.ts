@@ -10,7 +10,9 @@ const preview: Preview = {
         date: /Date$/i,
       },
     },
-    layout: 'centered',
+    // Using 'padded' instead of 'centered' to prevent vertical jumping
+    // We add horizontal centering via decorator below
+    layout: 'padded',
   },
   globalTypes: {
     darkMode: {
@@ -44,8 +46,18 @@ const preview: Preview = {
         }
       }, [isDark])
 
-      // Simple wrapper - CSS variables handle theming
-      return createElement(Story)
+      // Wrapper provides:
+      // - Horizontal centering (items-center on flex container)
+      // - Top anchoring (items-start would anchor to left, we use flex-col + items-center)
+      // - Padding for breathing room
+      // This prevents vertical jumping when component height changes
+      return createElement(
+        'div',
+        {
+          className: 'flex flex-col items-center w-full min-h-full pt-8 pb-16',
+        },
+        createElement(Story)
+      )
     },
   ],
 }

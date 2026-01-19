@@ -1,17 +1,20 @@
 {
-  "name": "vite-project",
+  "name": "storybook-demo",
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "description": "Design system component library with Storybook and Chromatic visual testing",
+  "homepage": "https://www.chromatic.com/manage?appId=6960ac1ac0bf168806f5afea",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",
-    "chromatic": "chromatic --exit-zero-on-changes"
+    "chromatic": "dotenv -e .env.local -- chromatic --exit-zero-on-changes"
   },
   "devDependencies": {
+    "@storybook/addon-a11y": "^10.1.11",
     "@storybook/addon-docs": "^10.1.11",
     "@storybook/addon-themes": "^10.1.11",
     "@storybook/react-vite": "^10.1.11",
@@ -20,7 +23,9 @@
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^5.1.2",
     "chromatic": "^13.3.5",
+    "dotenv-cli": "^11.0.0",
     "storybook": "^10.1.11",
+    "storybook-addon-pseudo-states": "10.1.11",
     "typescript": "~5.9.3",
     "vite": "^7.2.4"
   },
