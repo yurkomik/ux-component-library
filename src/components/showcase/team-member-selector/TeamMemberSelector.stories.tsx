@@ -2431,3 +2431,186 @@ Tests the search and filter workflow:
     }
   }
 }
+
+export const InteractionTestMaxSelectionLimit: Story = {
+  args: {
+    variant: 'multiple',
+    maxSelected: 3,
+    placeholder: 'Select up to 3 team members...'
+  },
+  render: (args) => {
+    const [selectedIds, setSelectedIds] = useState<string[]>([])
+    return (
+      <div className="flex flex-col items-center gap-6">
+        <div className="w-[320px] sm:w-[400px] min-h-[180px] p-4 border rounded-lg bg-background">
+          <TeamMemberSelector
+            {...args}
+            teamMembers={mockTeamMembers}
+            departments={mockDepartments}
+            roles={mockRoles}
+            selectedIds={selectedIds}
+            onSelectionChange={setSelectedIds}
+          />
+        </div>
+        <div className="w-[320px] sm:w-[400px] text-xs font-mono text-foreground/70 p-3 border border-dashed border-border rounded-md bg-secondary/50 space-y-1">
+          <p className="uppercase tracking-wider text-[10px] mb-1 text-muted-foreground">⚙️ Storybook State</p>
+          <p data-testid="selected-count">selected: {selectedIds.length}/3</p>
+          <p data-testid="selected-ids">ids: [{selectedIds.join(', ')}]</p>
+          <p data-testid="limit-reached" className={selectedIds.length >= 3 ? 'text-orange-600 dark:text-orange-400 font-medium' : 'text-muted-foreground'}>
+            {selectedIds.length >= 3 ? '⚠️ Limit reached - other items disabled' : '✓ Can select more'}
+          </p>
+        </div>
+      </div>
+    )
+  },
+  play: async ({ canvasElement, step }) => {
+    const canvas = within(canvasElement)
+
+    // Helper to find option in dropdown (not in badges)
+    const findListOption = async (name: string) => {
+      const elements = await screen.findAllByText(name)
+      const listOption = elements.find(el => el.classList.contains('font-medium'))
+      return listOption || elements[0]
+    }
+
+    await step('Open dropdown', async () => {
+      const trigger = canvas.getByRole('combobox')
+      await userEvent.click(trigger)
+      await new Promise(resolve => setTimeout(resolve, 300))
+    })
+
+    await step('Select first team member (Sarah Chen)', async () => {
+      const sarahOption = await findListOption('Sarah Chen')
+      await userEvent.click(sarahOption)
+      await new Promise(resolve => setTimeout(resolve, 200))
+      
+      const countElement = canvas.getByTestId('selected-count')
+      await expect(countElement).toHaveTextContent('selected: 1/3')
+    })
+
+    await step('Select second team member (Marcus Johnson)', async () => {
+      const marcusOption = await findListOption('Marcus Johnson')
+      await userEvent.click(marcusOption)
+      await new Promise(resolve => setTimeout(resolve, 200))
+      
+      const countElement = canvas.getByTestId('selected-count')
+      await expect(countElement).toHaveTextContent('selected: 2/3')
+    })
+
+    await step('Select third team member (Emily Rodriguez) - reaching limit', async () => {
+      const emilyOption = await findListOption('Emily Rodriguez')
+      await userEvent.click(emilyOption)
+      await new Promise(resolve => setTimeout(resolve, 200))
+      
+      const countElement = canvas.getByTestId('selected-count')
+      await expect(countElement).toHaveTextContent('selected: 3/3')
+      
+      const limitReached = canvas.getByTestId('limit-reached')
+      await expect(limitReached).toHaveTextContent(/Limit reached/)
+    })
+
+    await step('Verify other items are disabled when limit reached', async () => {
+      // Check that David Kim (not selected) is disabled
+      // CommandItem uses data-disabled="true" attribute (not standard disabled)
+      const davidOption = await findListOption('David Kim')
+      // Important: findListOption returns the inner text div, but the disabled attribute
+      // is on the parent CommandItem container. We need to traverse up.
+      const itemContainer = davidOption.closest('[data-value]') || davidOption
+      
+      const isDisabled = itemContainer?.getAttribute('data-disabled') === 'true' ||
+                        itemContainer?.hasAttribute('disabled') ||
+                        itemContainer?.getAttribute('aria-disabled') === 'true'
+      
+      await expect(isDisabled).toBe(true)
+    })
+
+    await step('Attempt to select fourth member (David Kim) - should fail', async () => {
+      const davidOption = await findListOption('David Kim')
+      const initialCount = canvas.getByTestId('selected-count').textContent
+      
+      // Try to click - should throw error because of pointer-events: none or just not trigger selection
+      try {
+        await userEvent.click(davidOption)
+      } catch (e) {
+        // Expected error: Unable to perform pointer interaction as the element has `pointer-events: none`
+      }
+      
+      await new Promise(resolve => setTimeout(resolve, 200))
+      
+      // Count should remain at 3/3
+      const countElement = canvas.getByTestId('selected-count')
+      await expect(countElement).toHaveTextContent('selected: 3/3')
+      await expect(countElement.textContent).toBe(initialCount)
+    })
+
+    await step('Deselect one member (Emily Rodriguez) to free up a slot', async () => {
+      const emilyOption = await findListOption('Emily Rodriguez')
+      await userEvent.click(emilyOption)
+      await new Promise(resolve => setTimeout(resolve, 200))
+      
+      const countElement = canvas.getByTestId('selected-count')
+      await expect(countElement).toHaveTextContent('selected: 2/3')
+      
+      const limitReached = canvas.getByTestId('limit-reached')
+      await expect(limitReached).toHaveTextContent(/Can select more/)
+    })
+
+    await step('Verify items are enabled again after deselecting', async () => {
+      const davidOption = await findListOption('David Kim')
+      // Important: findListOption returns the inner text div, but the disabled attribute
+      // is on the parent CommandItem container. We need to traverse up.
+      const itemContainer = davidOption.closest('[data-value]') || davidOption
+
+      // CommandItem uses data-disabled="true" attribute (not standard disabled)
+      const isDisabled = itemContainer?.getAttribute('data-disabled') === 'true' ||
+                        itemContainer?.hasAttribute('disabled') ||
+                        itemContainer?.getAttribute('aria-disabled') === 'true'
+      
+      // Should be enabled now (data-disabled should be null or "false")
+      await expect(isDisabled).toBe(false)
+    })
+
+    await step('Select David Kim now that slot is available', async () => {
+      const davidOption = await findListOption('David Kim')
+      await userEvent.click(davidOption)
+      await new Promise(resolve => setTimeout(resolve, 200))
+      
+      const countElement = canvas.getByTestId('selected-count')
+      await expect(countElement).toHaveTextContent('selected: 3/3')
+    })
+
+    await step('Close dropdown to see final selection', async () => {
+      await userEvent.keyboard('{Escape}')
+      await new Promise(resolve => setTimeout(resolve, 200))
+    })
+  },
+  parameters: {
+    docs: {
+      description: {
+        story: `
+**Design-Focused Test: Max Selection Limit Enforcement**
+
+This test validates the critical UX pattern of enforcing maximum selection limits:
+
+1. ✅ Select items up to the max (3)
+2. ✅ Verify other items become visually disabled
+3. ✅ Attempt to select disabled item (should fail)
+4. ✅ Deselect one item to free up a slot
+5. ✅ Verify items become enabled again
+6. ✅ Verify selection works after deselecting
+7. ✅ Verify UI clearly communicates limit state
+
+**Design Validation:**
+- **Visual feedback**: Disabled state is clearly visible
+- **User expectations**: Cannot select more than max
+- **Recovery path**: Can deselect to enable others
+- **Clear communication**: Shows "X/3 selected" and limit warning
+- **Accessibility**: Disabled items have proper ARIA attributes
+
+**Why this matters:**
+This pattern is common in team assignment, project creation, and resource allocation workflows where limits prevent over-allocation. The test ensures users understand when they've hit the limit and how to adjust their selection.
+        `
+      }
+    }
+  }
+}
