@@ -43,7 +43,7 @@ export class ProofingController {
    * Called on document change. Bumps version, cancels in-flight requests,
    * and schedules provider runs with debounce.
    */
-  onDocChange(text: string, debounceMs = 300): number {
+  onDocChange(text: string | (() => string), debounceMs = 300): number {
     const version = this.versionTracker.bump();
 
     for (const provider of this.providers) {
@@ -56,7 +56,8 @@ export class ProofingController {
 
       // Debounce the check
       const timer = setTimeout(() => {
-        this.runProvider(provider, text, version);
+        const resolved = typeof text === "function" ? text() : text;
+        this.runProvider(provider, resolved, version);
       }, debounceMs);
 
       this.debounceTimers.set(provider.name, timer);

@@ -22,7 +22,7 @@ export const proofingStateField = StateField.define<SuggestionStore>({
     let current = store;
 
     // Map suggestion positions through document changes
-    if (tr.docChanged) {
+    if (tr.docChanged && current.suggestions.length > 0) {
       tr.changes.iterChanges(
         (fromA, toA, _fromB, _toB, inserted) => {
           current = current.mapThroughChange(fromA, toA, inserted.length);

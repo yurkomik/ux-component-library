@@ -26,3 +26,10 @@ body {
   border: none !important;
   background: transparent !important;
 }
+
+/* Spinner animation for synonym/rewrite loading */
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

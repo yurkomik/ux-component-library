@@ -58,6 +58,11 @@ export class GrammarProvider implements ProofingProvider {
       }
 
       const data = (await response.json()) as LanguageToolResponse;
+
+      if (!data || !Array.isArray(data.matches)) {
+        return [];
+      }
+
       return this.mapMatches(data.matches, text);
     } catch (err) {
       if (err instanceof DOMException && err.name === "AbortError") {
@@ -72,7 +77,17 @@ export class GrammarProvider implements ProofingProvider {
     matches: LanguageToolMatch[],
     text: string,
   ): Suggestion[] {
-    return matches.map((m) => {
+    return matches
+      .filter((m) => {
+        return (
+          typeof m.offset === "number" &&
+          typeof m.length === "number" &&
+          m.offset >= 0 &&
+          m.length >= 0 &&
+          m.offset + m.length <= text.length
+        );
+      })
+      .map((m) => {
       const from = m.offset;
       const to = m.offset + m.length;
       const category = this.mapCategory(m.rule.category.id);

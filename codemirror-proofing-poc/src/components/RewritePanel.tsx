@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import type { RewriteMode } from "@/types";
 import { LLMRewriteService } from "@/providers/llm-rewrite-provider";
 import { DiffPreview } from "./DiffPreview";
@@ -31,16 +31,29 @@ export function RewritePanel({
   const [activeMode, setActiveMode] = useState<RewriteMode | null>(null);
 
   const rewriteService = useState(() => new LLMRewriteService({ apiUrl }))[0];
+  const abortControllerRef = useRef<AbortController | null>(null);
+
+  // Abort on unmount
+  useEffect(() => {
+    return () => {
+      abortControllerRef.current?.abort();
+    };
+  }, []);
 
   const handleRewrite = useCallback(
     async (mode: RewriteMode) => {
+      // Abort previous in-flight request
+      abortControllerRef.current?.abort();
+
+      const ac = new AbortController();
+      abortControllerRef.current = ac;
+
       setLoading(true);
       setError(null);
       setActiveMode(mode);
       setRewriteResult(null);
 
       try {
-        const ac = new AbortController();
         const result = await rewriteService.rewrite(
           selectedText,
           mode,
@@ -48,6 +61,9 @@ export function RewritePanel({
         );
         setRewriteResult(result.rewritten);
       } catch (err) {
+        if (err instanceof DOMException && err.name === "AbortError") {
+          return; // Expected cancellation
+        }
         setError(
           err instanceof Error ? err.message : "Rewrite failed",
         );

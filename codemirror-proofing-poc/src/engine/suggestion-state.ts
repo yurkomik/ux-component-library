@@ -5,6 +5,8 @@ import type { Suggestion, SuggestionSource } from "@/types";
  * Each mutation returns a new instance.
  */
 export class SuggestionStore {
+  private _activeCache: Suggestion[] | null = null;
+
   constructor(
     readonly suggestions: readonly Suggestion[] = [],
     readonly dismissed: ReadonlySet<string> = new Set(),
@@ -71,6 +73,16 @@ export class SuggestionStore {
     insertLength: number,
   ): SuggestionStore {
     const delta = insertLength - (changeTo - changeFrom);
+
+    if (delta === 0) {
+      // Only filter overlapping, don't spread
+      const filtered = this.suggestions.filter(
+        (s) => s.to <= changeFrom || s.from >= changeTo,
+      );
+      if (filtered.length === this.suggestions.length) return this;
+      return new SuggestionStore(filtered, this.dismissed);
+    }
+
     const mapped: Suggestion[] = [];
 
     for (const s of this.suggestions) {
@@ -104,6 +116,9 @@ export class SuggestionStore {
   }
 
   get active(): Suggestion[] {
-    return this.suggestions.filter((s) => !this.dismissed.has(s.id));
+    if (!this._activeCache) {
+      this._activeCache = this.suggestions.filter((s) => !this.dismissed.has(s.id));
+    }
+    return this._activeCache;
   }
 }

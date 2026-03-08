@@ -37,8 +37,10 @@ export function createProofingViewPlugin(config: ProofingViewPluginConfig) {
     return {
       update(update: ViewUpdate) {
         if (update.docChanged) {
-          const text = update.state.doc.toString();
-          controller.onDocChange(text, config.debounceMs ?? 300);
+          controller.onDocChange(
+            () => update.state.doc.toString(),
+            config.debounceMs ?? 300,
+          );
         }
       },
       destroy() {

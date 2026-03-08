@@ -1,5 +1,12 @@
 import type { RewriteProvider, RewriteMode, Suggestion } from "@/types";
 
+const VALID_MODES: ReadonlySet<RewriteMode> = new Set<RewriteMode>([
+  "fix-grammar",
+  "rewrite",
+  "shorter",
+  "more-formal",
+]);
+
 export interface LLMRewriteConfig {
   /** API endpoint for rewrite requests */
   apiUrl?: string;
@@ -24,6 +31,10 @@ export class LLMRewriteService implements RewriteProvider {
     mode: RewriteMode,
     signal: AbortSignal,
   ): Promise<{ rewritten: string; suggestions: Suggestion[] }> {
+    if (!VALID_MODES.has(mode)) {
+      throw new Error(`Invalid rewrite mode: ${mode}`);
+    }
+
     const response = await fetch(this.apiUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },

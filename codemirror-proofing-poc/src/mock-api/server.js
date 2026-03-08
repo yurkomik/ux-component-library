@@ -10,6 +10,9 @@ import { createServer } from "node:http";
 
 const PORT = 3001;
 
+const ALLOWED_ORIGINS = ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:3000'];
+const MAX_BODY_SIZE = 1024 * 1024; // 1MB
+
 const REWRITE_STRATEGIES = {
   "fix-grammar": (text) => {
     // Simple heuristic grammar fixes for demo
@@ -52,8 +55,10 @@ const REWRITE_STRATEGIES = {
 };
 
 const server = createServer((req, res) => {
-  // CORS headers
-  res.setHeader("Access-Control-Allow-Origin", "*");
+  // CORS headers – restrict to known local origins
+  const origin = req.headers.origin;
+  const allowedOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
+  res.setHeader("Access-Control-Allow-Origin", allowedOrigin);
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
 
@@ -65,7 +70,15 @@ const server = createServer((req, res) => {
 
   if (req.method === "POST" && req.url === "/api/proof/rewrite") {
     let body = "";
+    let bodySize = 0;
     req.on("data", (chunk) => {
+      bodySize += chunk.length;
+      if (bodySize > MAX_BODY_SIZE) {
+        res.writeHead(413);
+        res.end("Request too large");
+        req.destroy();
+        return;
+      }
       body += chunk;
     });
     req.on("end", () => {
